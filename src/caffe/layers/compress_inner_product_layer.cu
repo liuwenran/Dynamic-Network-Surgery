@@ -105,13 +105,17 @@ void CCMomentCalc(const int n, const Dtype* wb, const Dtype* mask, Dtype* mu, Dt
   const unsigned int NUM_THREADS = 512;
   Dtype* pmu_g; Dtype* pstd_g; unsigned int* pncount_g;
   Dtype* pmu_c; Dtype* pstd_c; unsigned int* pncount_c;
+  
+//这里申请的block数是按1024个线程申请的，因此总共的线程数是数据的一半
   int num_p = (n+(NUM_THREADS<<1)-1)/(NUM_THREADS<<1);  
   cudaMalloc(&pmu_g, sizeof(Dtype)  * num_p);
   cudaMalloc(&pstd_g, sizeof(Dtype) * num_p);
   cudaMalloc(&pncount_g, sizeof(unsigned int) * num_p);
   pmu_c = (Dtype*) malloc(num_p * sizeof(Dtype));
   pstd_c = (Dtype*) malloc(num_p * sizeof(Dtype)); 
-  pncount_c = (unsigned int*) malloc(num_p * sizeof(unsigned int));      
+  pncount_c = (unsigned int*) malloc(num_p * sizeof(unsigned int));    
+
+//每个block里面的线程还是512，所以总共的线程数是数据的一半可以从这看出来
   CCMomentCollect<Dtype><<<num_p,NUM_THREADS>>>(n, wb, mask, pmu_g, pstd_g, pncount_g);
   CUDA_POST_KERNEL_CHECK; 
   cudaMemcpy(pmu_c, pmu_g, sizeof(Dtype) * num_p, cudaMemcpyDeviceToHost);
